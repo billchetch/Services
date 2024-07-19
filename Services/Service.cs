@@ -11,7 +11,7 @@ namespace Chetch.Services
 {
     abstract public class Service<T>(ILogger<T> logger) : BackgroundService where T : BackgroundService
     {
-        public static String ServiceName { get; internal set; }
+        public static String ServiceName { get; internal set; } = String.Empty;
 
         static protected IConfigurationRoot getAppSettings(String filename = "appsettings.json")
         {
