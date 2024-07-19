@@ -5,16 +5,24 @@ using Microsoft.Extensions.Hosting.WindowsServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.EventLog;
+using System.ServiceProcess;
 
 namespace Chetch.Services
 {
     abstract public class Service<T>(ILogger<T> logger) : BackgroundService where T : BackgroundService
     {
+        public static String ServiceName { get; internal set; }
+
+        static protected IConfigurationRoot getAppSettings(String filename = "appsettings.json")
+        {
+            return new ConfigurationBuilder().AddJsonFile(filename).Build();
+        }
+
         static public void Run(String[] args)
         {
             HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-            var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+            var config = getAppSettings();
             var sourceName = config.GetValue<String>("Logging:EventLog:SourceName");
 
             if (sourceName == null)
@@ -22,9 +30,10 @@ namespace Chetch.Services
                 sourceName = "Chetch";
             }
 
+            ServiceName = sourceName;
             builder.Services.AddWindowsService(options =>
             {
-                options.ServiceName = sourceName;
+                options.ServiceName = ServiceName;
             });
 
             if (OperatingSystem.IsWindows())
@@ -34,10 +43,12 @@ namespace Chetch.Services
             }
 
             builder.Services.AddHostedService<T>();
-
+            
             IHost host = builder.Build();
             host.Run();
         }
+
+        
 
         public override Task StartAsync(CancellationToken cancellationToken)
         {
