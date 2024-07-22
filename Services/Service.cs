@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.EventLog;
 using System.ServiceProcess;
+using System.Diagnostics;
 
 namespace Chetch.Services
 {
@@ -13,16 +14,31 @@ namespace Chetch.Services
     {
         public static String ServiceName { get; internal set; } = String.Empty;
 
-        static protected IConfigurationRoot getAppSettings(String filename = "appsettings.json")
+        static protected IConfigurationRoot GetAppSettings(String filename = "appsettings.json")
         {
             return new ConfigurationBuilder().AddJsonFile(filename).Build();
+        }
+
+        static protected TraceSource CreateTraceSource(IConfigurationRoot config)
+        {
+            //Tracing
+            TraceSource traceSource = null;
+            String traceLevel = config.GetValue<String>("Tracing:Level", null);
+            if (traceLevel != null && !traceLevel.Equals("None"))
+            {
+                traceSource = new System.Diagnostics.TraceSource(ServiceName);
+                SourceSwitch sourceSwitch = new SourceSwitch("SourceSwitch", traceLevel);
+                traceSource.Switch = sourceSwitch;
+                traceSource.Listeners.Add(new System.Diagnostics.ConsoleTraceListener());
+            }
+            return traceSource;
         }
 
         static public void Run(String[] args)
         {
             HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-            var config = getAppSettings();
+            var config = GetAppSettings();
             var sourceName = config.GetValue<String>("Logging:EventLog:SourceName");
 
             if (sourceName == null)
