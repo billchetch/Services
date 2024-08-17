@@ -14,19 +14,19 @@ namespace Chetch.Services
     {
         public static String ServiceName { get; internal set; } = String.Empty;
 
-        static protected IConfigurationRoot GetAppSettings(String filename = "appsettings.json")
+        static public IConfigurationRoot GetAppSettings(String filename = "appsettings.json")
         {
             return new ConfigurationBuilder().AddJsonFile(filename).Build();
         }
 
-        static protected TraceSource CreateTraceSource(IConfigurationRoot config)
+        static public TraceSource CreateTraceSource(IConfigurationRoot config, String traceSourceName)
         {
             //Tracing
             TraceSource traceSource = null;
             String traceLevel = config.GetValue<String>("Tracing:Level", null);
             if (traceLevel != null && !traceLevel.Equals("None"))
             {
-                traceSource = new System.Diagnostics.TraceSource(ServiceName);
+                traceSource = new System.Diagnostics.TraceSource(traceSourceName);
                 SourceSwitch sourceSwitch = new SourceSwitch("SourceSwitch", traceLevel);
                 traceSource.Switch = sourceSwitch;
                 traceSource.Listeners.Add(new System.Diagnostics.ConsoleTraceListener());
@@ -64,14 +64,11 @@ namespace Chetch.Services
             host.Run();
         }
 
-        
-
         public override Task StartAsync(CancellationToken cancellationToken)
         {
             logger.LogInformation(10, "Starting service at: {time}", DateTimeOffset.Now);
             return base.StartAsync(cancellationToken);
         }
-
 
         abstract protected Task Execute(CancellationToken stoppingToken);
         
